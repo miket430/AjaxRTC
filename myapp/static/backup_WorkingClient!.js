@@ -7,9 +7,11 @@ var callToUsernameInput = document.querySelector('#callToUsernameInput');
 var callBtn = document.querySelector('#callBtn'); 
 
 var hangUpBtn = document.querySelector('#hangUpBtn'); 
+var callBtn1 = document.querySelector('#callBtn1'); 
 
-var msgInput = document.querySelector('#msgInput'); 
-var sendMsgBtn = document.querySelector('#sendMsgBtn'); 
+var hangUpBtn1 = document.querySelector('#hangUpBtn1'); 
+//var msgInput = document.querySelector('#msgInput'); 
+//var sendMsgBtn = document.querySelector('#sendMsgBtn'); 
 
 //*******
 // Video
@@ -22,7 +24,7 @@ var yourConn;
 var dataChannel; 
 var connectedUser; 
 
-var chatArea = document.querySelector('#chatarea');
+//var chatArea = document.querySelector('#chatarea');
 callPage.style.display = "none"; 
 
 // Login when the user clicks the button 
@@ -48,8 +50,7 @@ callBtn.addEventListener("click", function () {
       	var message = { 
       					type: "offer", 
 				        offer: offer,
-				        name: name,
-				        callee: connectedUser 
+				        name: name 
 				         			};
 		console.log("sending: Offer");
       	sendData(message); 
@@ -61,21 +62,20 @@ callBtn.addEventListener("click", function () {
    
 });
 
-sendMsgBtn.addEventListener("click", function() {
-	var val = msgInput.value; 
-    chatArea.innerHTML += name + ": " + val + "<br />"; 
-    //sending a message to a connected peer 
-    dataChannel.send(val); 
-    msgInput.value = ""; 
-});
 
 hangUpBtn.addEventListener("click", function () { 
-	var message = { 
-				      type: "leave",
-				      name: connectedUser
-				   };
+	var message = { type: "GetOffer"};
    	sendData(message); 
-   	handleLeave();
+
+});
+
+callBtn1.addEventListener("click", function () { 
+	var message = { type: "GetAnswer"};
+   	sendData(message); 
+});
+hangUpBtn1.addEventListener("click", function () { 
+	var message = { type: "GetIce", name: name};
+   	sendData(message); 
 });
 
 
@@ -97,7 +97,7 @@ function sendData(message){
 				      //when somebody wants to call us 
 				      case "offer": 
 				         console.log("offer: ",dataChannel.readyState);
-				         handleOffer(response.offer, response.name, response.caller); 
+				         handleOffer(response.offer, response.name); 
 				         break; 
 				      case "answer":
 				         console.log("answer: ",dataChannel.readyState); 
@@ -108,10 +108,10 @@ function sendData(message){
 				         console.log("candidate: ",dataChannel.readyState);
 				         handleCandidate(response.candidate); 
 				         break; 
-				      case "leave": 
+				/*      case "leave": 
 				         console.log("leave: ",dataChannel.readyState);
 				         handleLeave(); 
-				         break; 
+				         break; */
 				      default:
 				      	 console.log("Not relavent"); 
 				         break; 
@@ -189,6 +189,7 @@ function handleLogin(success) {
 			                  candidate: event.candidate
 			                  
 			               	 };
+			    console.log("sending candidate");
 			    sendData(message); 
             } 
          }; 
@@ -224,9 +225,8 @@ function handleLogin(success) {
 };
 
 //when somebody sends us an offer 
-function handleOffer(offer, name,caller) { 
-   connectedUser = caller;
-   console.log("it's meeeeeeeee ", connectedUser);
+function handleOffer(offer, name) { 
+   connectedUser = name; 
    yourConn.setRemoteDescription(new RTCSessionDescription(offer)); 
    
    //create an answer to an offer 
@@ -238,6 +238,7 @@ function handleOffer(offer, name,caller) {
 			         	answer: answer
 			         	 
 			      	};
+	  console.log("It's your: ",name)
       sendData(message); 
    }, function (error) { 
       alert("Error when creating an answer"); 
@@ -249,18 +250,7 @@ function handleAnswer(answer) {
    yourConn.setRemoteDescription(new RTCSessionDescription(answer)); 
 };
  
-//when we got an ice candidate fleaverom a remote user 
+//when we got an ice candidate from a remote user 
 function handleCandidate(candidate) { 
    yourConn.addIceCandidate(new RTCIceCandidate(candidate)); 
-};
-
-function handleLeave() { 
-   connectedUser = null; 
-   yourConn.close(); 
-   yourConn.onicecandidate = null; 
-   //*************
-   //Video
-   remoteVideo.src = null;
-   yourConn.onaddstream = null;
-   //*************
 };
